@@ -1,11 +1,19 @@
 from TM1py import TM1Service
 
 
-def find_gateway(target_server):
+def find_gateway(ip_address, http_port_number, using_ssl):
+    '''
+    Find a gateway address based on the TM1 response
+    :param ip_address: TM1 server IP address or host Name
+    :param http_port_number: TM1 HTTP Port Number
+    :param using_ssl: bool value for using SSL
+    :return: gateway (string)
+    '''
 
-    kwargs = {'address': target_server.ip_address,
-              'port': target_server.http_port_number,
-              'ssl': target_server.using_ssl,
+
+    kwargs = {'address': ip_address,
+              'port': http_port_number,
+              'ssl': using_ssl,
               'user': None,
               'password': None
               }
