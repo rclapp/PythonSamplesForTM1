@@ -30,30 +30,44 @@ def find_gateway(ip_address, http_port_number, using_ssl):
             raise authenticate_header
 
 
-def build_connection_parameters(admin_host, server_name, gateway=None, namespace=None):
+def build_connection_parameters(admin_host, server_name, gateway=None, namespace=None, username=None, password=None):
+    '''
+    build the paramters you need for a tm1 service connection.
+    :param admin_host: admin host string
+    :param server_name: TM1 Server Name
+    :param gateway: gateway optional
+    :param namespace: namespace optional
+    :param username: username value
+    :param password: password value
+    :return: connection kwargs (dictonary)
+    ''''
     server_found = False
     kwargs = {}
 
+    # Get servers from admin host
     try:
         servers = TM1py.Utils.get_all_servers_from_adminhost(admin_host)
     except Exception as e:
         logger.error("Unable to connect to admin host: {}".format(e))
         raise e
 
-
+    # Find server that matched available servers and update kwargs
     for s in servers:
         if s.name.lower() == server_name.lower():
             target_server = s
             server_found = True
 
+            kwargs = {'address': target_server.ip_address,
+                      'port': target_server.http_port_number,
+                      'ssl': target_server.using_ssl,
+                      'user': username,
+                      'password': password
+                      }
+
+    # Server Not Found
     if not server_found:
         logger.error("Server: {} not found on admin host: {}".format(server_name, admin_host))
         raise Exception("Server: {} not found on admin host: {}".format(server_name, admin_host))
-
-    kwargs = {'address': target_server.ip_address,
-              'port': target_server.http_port_number,
-              'ssl': target_server.using_ssl
-              }
 
     elif gateway is not None and namespace is not None:
 
@@ -67,17 +81,23 @@ def build_connection_parameters(admin_host, server_name, gateway=None, namespace
     elif gateway is None and namespace is not None:
 
         try:
-            gateway = find_gateway(target_server)
+            gateway = find_gateway(target_server.ip_address, target_server.http_port_number, target_server.using_ssl)
 
             kwargs.update({
                 'gateway': gateway,
                 'namespace': namespace,
                 'user': None,
                 'password': None
-            })
+                })
+
 
         except Exception as e:
             raise e
 
     else:
         raise Exception("Missing Connection Information")
+
+    return kwargs
+
+
+
